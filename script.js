@@ -19,4 +19,4 @@ const mainPodcasts1 = [
   },
 ];
 
-const MainPlayer1 = new Player("main-howl-container1", mainPodcasts1);
+const player = new Player("main-howl-container1", mainPodcasts1);

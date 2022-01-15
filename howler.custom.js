@@ -1,7 +1,6 @@
-window.activePlayers = [];
-
 class Player {
-  constructor(id, playlist) {
+  constructor(id, playlist, isMain = false) {
+    this.isMain = isMain;
     this.playlist = playlist;
     this.id = id;
     this.podcastIndex = 0; // current podcast index
@@ -85,6 +84,10 @@ Player.prototype.updatePodcastInfo = function () {
       this.interval = setInterval(() => {
         this.updateProgress();
       }, 300);
+
+      window.activePlayers[this.id] = this.getHash();
+
+      if (this.isMain) this.checkAnotherPlayer();
     },
 
     onpause: () => {
@@ -202,55 +205,25 @@ Player.prototype.getTime = function (value) {
   return { minutes, seconds };
 };
 
+Player.prototype.getHash = function () {
+  return md5(this.currentPodcast.src, this.id);
+};
+
 Player.prototype.clear = function () {
   this.progress.style.width = "0%";
   this.currentTime.innerHTML = "00:00";
 };
 
-// checkAnotherPlayer() {
-//   // change main player hash
-//   window.activePlayers.shift();
-//   hash = md5(this.currentPodcast.src, this.id); // howl-container - ID of the player container
-//   window.activePlayers.unshift({ hash, element: this.instance });
+Player.prototype.checkAnotherPlayer = function () {
+  if (!this.isMain)
+    throw new Error(
+      "This is not a main player, it cannot check for another players"
+    );
 
-//   hash = md5(this.currentPodcast.src, this.id); // howl-container - ID of the player container
-
-//   const allAudioTagPlayers = document.querySelectorAll("[id*='howl']"); // all howl container elements
-
-//   allAudioTagPlayers.forEach((element) => {
-//     const playerHash = md5(element.src, element.id);
-//     const payload = { hash: playerHash, element };
-
-//     if (
-//       window.activePlayers.findIndex((p) => p.hash === playerHash) < 0 &&
-//       element.duration > 0 &&
-//       !element.paused
-//     ) {
-//       window.activePlayers.push(payload);
-//       element.muted = true; // mute ongoing player
-//     }
-//   });
-// },
-
-const mainPodcasts = [
-  {
-    id: 1,
-    name: "Reflecting on the Past Year 1",
-    date: "15.12.2021",
-    src: "music/hey.mp3",
-  },
-  {
-    id: 2,
-    name: "Reflecting on the Past Year 2",
-    date: "16.12.2021",
-    src: "music/summer.mp3",
-  },
-  {
-    id: 3,
-    name: "Reflecting on the Past Year 3",
-    date: "17.12.2021",
-    src: "music/ukulele.mp3",
-  },
-];
-
-const MainPlayer = new Player("main-howl-container", mainPodcasts);
+  window.activePlayers.forEach((player) => {
+    const instance = player.element;
+    if (instance.playing()) {
+      instance.pause();
+    }
+  });
+};
