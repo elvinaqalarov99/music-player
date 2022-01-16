@@ -6,7 +6,6 @@ class Player {
     this.podcastIndex = 0; // current podcast index
     this.currentPodcast = this.playlist[this.podcastIndex]; // current podcast data
     this.isPlaying = false;
-    this.interval; // interval to control currentTime;
     this.instance; // current podcast Howl intance;
     this.vol = 0.5; // current volume
     this.hash;
@@ -94,16 +93,13 @@ Player.prototype.updatePodcastInfo = function () {
     },
 
     onplay: () => {
-      this.interval = setInterval(() => {
-        this.updateProgress();
-      }, 100);
+      requestAnimationFrame(this.updateProgress.bind(this));
 
       if (this.isMain) this.checkAnotherPlayer(0);
     },
 
     onpause: () => {
-      clearInterval(this.interval);
-
+      requestAnimationFrame(this.updateProgress.bind(this));
       if (this.isMain) this.checkAnotherPlayer(1);
     },
 
@@ -146,7 +142,6 @@ Player.prototype.pausePodcast = function () {
 
 Player.prototype.changePodcast = function (callback) {
   this.isPlaying = true;
-  clearInterval(this.interval);
   this.clear();
 
   callback(); // manage prev and next podcasts
@@ -162,6 +157,10 @@ Player.prototype.updateProgress = function () {
 
   this.currentTime.innerHTML = `${minutes}:${seconds}`;
   this.progress.style.width = `${width}%`;
+
+  if (this.isPlaying) {
+    requestAnimationFrame(this.updateProgress.bind(this));
+  }
 };
 
 Player.prototype.prev = function () {
