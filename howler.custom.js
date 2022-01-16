@@ -99,7 +99,6 @@ Player.prototype.updatePodcastInfo = function () {
     },
 
     onpause: () => {
-      requestAnimationFrame(this.updateProgress.bind(this));
       if (this.isMain) this.checkAnotherPlayer(1);
     },
 
@@ -107,6 +106,8 @@ Player.prototype.updatePodcastInfo = function () {
       if (!this.isPlaying) {
         this.playPodcast();
       }
+
+      requestAnimationFrame(this.updateProgress.bind(this));
 
       if (this.isMain) this.checkAnotherPlayer(2);
     },
