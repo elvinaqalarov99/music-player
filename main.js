@@ -1,4 +1,4 @@
-window.activePlayers = [];
+window["activePlayers"] = [];
 
 const mainPodcasts = [
   {

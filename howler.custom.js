@@ -9,8 +9,7 @@ class Player {
     this.interval; // interval to control currentTime;
     this.instance; // current podcast Howl intance;
     this.vol = 0.5; // current volume
-    this.hash; // current hash
-
+    this.hash;
     // Bind Player class this to funtions to overwrite default this
     this.updateVolume = this.updateVolume.bind(this);
     this.setProgress = this.setProgress.bind(this);
@@ -23,7 +22,7 @@ class Player {
 }
 
 Player.prototype.initialize = function () {
-  // Buttons
+  // Player Buttons
   this.playBtn = document.querySelector(`#${this.id} #play`);
   this.prevBtn = document.querySelector(`#${this.id} #prev`);
   this.nextBtn = document.querySelector(`#${this.id} #next`);
@@ -37,26 +36,22 @@ Player.prototype.initialize = function () {
   this.progressContainer = document.querySelector(`#${this.id} #progress-info`);
   this.progress = document.querySelector(`#${this.id} #progress`);
 
-  // Listeners
+  // Event Listeners
   this.prevBtn.addEventListener("click", this.prev);
   this.nextBtn.addEventListener("click", this.next);
   this.progressContainer.addEventListener("click", this.setProgress);
-
   this.prev15Btn.addEventListener("click", () =>
     this.setProgressTo15Secconds(-1)
   );
-
   this.next15Btn.addEventListener("click", () =>
     this.setProgressTo15Secconds(1)
   );
-
   this.playBtn.addEventListener("click", () => {
     this.isPlaying = !this.isPlaying;
 
     if (this.isPlaying) this.playPodcast();
     else this.pausePodcast();
   });
-
   this.volume.addEventListener("change", this.updateVolume);
 };
 
@@ -78,6 +73,24 @@ Player.prototype.updatePodcastInfo = function () {
       this.durationTime.innerHTML = `${minutes}:${seconds}`;
       this.podcastTitle.innerHTML = this.currentPodcast.name;
       this.podcastDate.innerHTML = this.currentPodcast.date;
+
+      this.hash = this.getHash();
+
+      if (!window["activePlayers"].some((player) => player.id === this.id)) {
+        window["activePlayers"].push({
+          id: this.id,
+          hash: this.hash,
+          instance: this,
+        });
+      } else {
+        window["activePlayers"] = window["activePlayers"].map((player) => {
+          if (player.id == this.id && player.hash !== this.hash) {
+            return { ...player, hash: this.hash };
+          }
+
+          return player;
+        });
+      }
     },
 
     onplay: () => {
@@ -85,13 +98,23 @@ Player.prototype.updatePodcastInfo = function () {
         this.updateProgress();
       }, 300);
 
-      window.activePlayers[this.id] = this.getHash();
-
-      if (this.isMain) this.checkAnotherPlayer();
+      if (this.isMain) this.checkAnotherPlayer(0);
     },
 
     onpause: () => {
       clearInterval(this.interval);
+
+      if (this.isMain) this.checkAnotherPlayer(1);
+    },
+
+    onseek: () => {
+      if (this.isMain) this.checkAnotherPlayer(2);
+
+      if (!this.isPlaying) {
+        this.playPodcast();
+      }
+
+      console.log(this.id, this.instance.seek());
     },
 
     onend: () => {
@@ -100,15 +123,26 @@ Player.prototype.updatePodcastInfo = function () {
   });
 };
 
-Player.prototype.playPodcast = function () {
-  this.playBtn.querySelector("i").classList.replace("fa-play", "fa-pause");
+Player.prototype.mute = function () {
+  this.vol = 0;
+  this.volume.value = 0;
+  this.instance.volume(this.vol);
+};
 
+Player.prototype.seek = function (seek) {
+  this.instance.seek(seek);
+  this.updateProgress();
+};
+
+Player.prototype.playPodcast = function () {
+  this.isPlaying = true;
+  this.playBtn.querySelector("i").classList.replace("fa-play", "fa-pause");
   this.instance.play();
 };
 
 Player.prototype.pausePodcast = function () {
+  this.isPlaying = false;
   this.playBtn.querySelector("i").classList.replace("fa-pause", "fa-play");
-
   this.instance.pause();
 };
 
@@ -122,6 +156,14 @@ Player.prototype.changePodcast = function (callback) {
   this.instance.unload(); // Unload and destroy a Howl object
   this.updatePodcastInfo();
   this.playPodcast();
+};
+
+Player.prototype.updateProgress = function () {
+  const width = (this.instance.seek() / this.instance.duration()) * 100;
+  const { minutes, seconds } = this.getTime(this.instance.seek());
+
+  this.currentTime.innerHTML = `${minutes}:${seconds}`;
+  this.progress.style.width = `${width}%`;
 };
 
 Player.prototype.prev = function () {
@@ -138,16 +180,6 @@ Player.prototype.next = function () {
   });
 };
 
-Player.prototype.updateProgress = function () {
-  if (this.instance.playing()) {
-    const width = (this.instance.seek() / this.instance.duration()) * 100;
-    const { minutes, seconds } = this.getTime(this.instance.seek());
-
-    this.currentTime.innerHTML = `${minutes}:${seconds}`;
-    this.progress.style.width = `${width}%`;
-  }
-};
-
 Player.prototype.updateVolume = function (e) {
   this.vol = e.target.value;
 
@@ -160,14 +192,10 @@ Player.prototype.updateVolume = function (e) {
 Player.prototype.setProgress = function (e) {
   const width = this.progressContainer.clientWidth;
   const clickX = e.offsetX;
-
   const duration = this.instance.duration();
-  this.instance.seek((clickX / width) * duration);
 
-  if (!this.instance.playing()) {
-    this.isPlaying = true;
-    this.playPodcast();
-  }
+  this.instance.seek((clickX / width) * duration);
+  this.updateProgress();
 };
 
 Player.prototype.setProgressTo15Secconds = function (dir) {
@@ -179,11 +207,7 @@ Player.prototype.setProgressTo15Secconds = function (dir) {
   else if (newSeek <= 0) newSeek = 0;
 
   this.instance.seek(newSeek);
-
-  if (!this.instance.playing()) {
-    this.isPlaying = true;
-    this.playPodcast();
-  }
+  this.updateProgress();
 };
 
 Player.prototype.getTime = function (value) {
@@ -206,7 +230,7 @@ Player.prototype.getTime = function (value) {
 };
 
 Player.prototype.getHash = function () {
-  return md5(this.currentPodcast.src, this.id);
+  return (this.hash = md5(this.currentPodcast.src));
 };
 
 Player.prototype.clear = function () {
@@ -214,16 +238,34 @@ Player.prototype.clear = function () {
   this.currentTime.innerHTML = "00:00";
 };
 
-Player.prototype.checkAnotherPlayer = function () {
+Player.prototype.checkAnotherPlayer = function (type) {
   if (!this.isMain)
     throw new Error(
       "This is not a main player, it cannot check for another players"
     );
 
-  window.activePlayers.forEach((player) => {
-    const instance = player.element;
-    if (instance.playing()) {
-      instance.pause();
+  window["activePlayers"].forEach((player) => {
+    if (player.id !== this.id) {
+      const instance = player.instance;
+      if (player.hash === this.hash) {
+        switch (type) {
+          case 0:
+            instance.mute();
+            instance.playPodcast();
+            instance.seek(this.instance.seek());
+            break;
+          case 1:
+            instance.pausePodcast();
+            instance.seek(this.instance.seek());
+            break;
+          case 2:
+            instance.mute();
+            instance.seek(this.instance.seek());
+            break;
+        }
+      } else {
+        instance.pausePodcast();
+      }
     }
   });
 };
