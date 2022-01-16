@@ -96,7 +96,7 @@ Player.prototype.updatePodcastInfo = function () {
     onplay: () => {
       this.interval = setInterval(() => {
         this.updateProgress();
-      }, 300);
+      }, 100);
 
       if (this.isMain) this.checkAnotherPlayer(0);
     },
@@ -108,13 +108,11 @@ Player.prototype.updatePodcastInfo = function () {
     },
 
     onseek: () => {
-      if (this.isMain) this.checkAnotherPlayer(2);
-
       if (!this.isPlaying) {
         this.playPodcast();
       }
 
-      console.log(this.id, this.instance.seek());
+      if (this.isMain) this.checkAnotherPlayer(2);
     },
 
     onend: () => {
@@ -250,17 +248,16 @@ Player.prototype.checkAnotherPlayer = function (type) {
       if (player.hash === this.hash) {
         switch (type) {
           case 0:
-            instance.mute();
+            setTimeout(() => instance.seek(this.instance.seek()), 10); // wait 10  milliseconds to get main player seek position
             instance.playPodcast();
-            instance.seek(this.instance.seek());
+            instance.mute();
             break;
           case 1:
             instance.pausePodcast();
-            instance.seek(this.instance.seek());
             break;
           case 2:
+            setTimeout(() => instance.seek(this.instance.seek()), 10); // wait 10  milliseconds to get main player seek position
             instance.mute();
-            instance.seek(this.instance.seek());
             break;
         }
       } else {
