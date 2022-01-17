@@ -15,26 +15,29 @@ class Player {
     this.prev = this.prev.bind(this);
     this.next = this.next.bind(this);
 
-    this.initialize(); // define buttons & listeners
+    // Player Buttons
+    this.playBtn = document.querySelector(`#${this.id} #play`);
+    this.prevBtn = document.querySelector(`#${this.id} #prev`);
+    this.nextBtn = document.querySelector(`#${this.id} #next`);
+    this.prev15Btn = document.querySelector(`#${this.id} #prev-15`);
+    this.next15Btn = document.querySelector(`#${this.id} #next-15`);
+    this.volume = document.querySelector(`#${this.id} #volume`);
+    this.currentTime = document.querySelector(`#${this.id} #current-time`);
+    this.durationTime = document.querySelector(`#${this.id} #duration-time`);
+    this.podcastDate = document.querySelector(`#${this.id} #date`);
+    this.podcastTitle = document.querySelector(`#${this.id} #title`);
+    this.progressContainer = document.querySelector(
+      `#${this.id} #progress-info`
+    );
+    this.progress = document.querySelector(`#${this.id} #progress`);
+
+    this.removeListeners(); // remove all current listeners for further intialize
+    this.addListeners(); // add listeners
     this.updatePodcastInfo(); // set first podcast instance
   }
 }
 
-Player.prototype.initialize = function () {
-  // Player Buttons
-  this.playBtn = document.querySelector(`#${this.id} #play`);
-  this.prevBtn = document.querySelector(`#${this.id} #prev`);
-  this.nextBtn = document.querySelector(`#${this.id} #next`);
-  this.prev15Btn = document.querySelector(`#${this.id} #prev-15`);
-  this.next15Btn = document.querySelector(`#${this.id} #next-15`);
-  this.volume = document.querySelector(`#${this.id} #volume`);
-  this.currentTime = document.querySelector(`#${this.id} #current-time`);
-  this.durationTime = document.querySelector(`#${this.id} #duration-time`);
-  this.podcastDate = document.querySelector(`#${this.id} #date`);
-  this.podcastTitle = document.querySelector(`#${this.id} #title`);
-  this.progressContainer = document.querySelector(`#${this.id} #progress-info`);
-  this.progress = document.querySelector(`#${this.id} #progress`);
-
+Player.prototype.addListeners = function () {
   // Event Listeners
   this.prevBtn.addEventListener("click", this.prev);
   this.nextBtn.addEventListener("click", this.next);
@@ -52,6 +55,26 @@ Player.prototype.initialize = function () {
     else this.pausePodcast();
   });
   this.volume.addEventListener("change", this.updateVolume);
+};
+
+Player.prototype.removeListeners = function () {
+  // Event Listeners
+  this.prevBtn.removeEventListener("click", this.prev);
+  this.nextBtn.removeEventListener("click", this.next);
+  this.progressContainer.removeEventListener("click", this.setProgress);
+  this.prev15Btn.removeEventListener("click", () =>
+    this.setProgressTo15Secconds(-1)
+  );
+  this.next15Btn.removeEventListener("click", () =>
+    this.setProgressTo15Secconds(1)
+  );
+  this.playBtn.removeEventListener("click", () => {
+    this.isPlaying = !this.isPlaying;
+
+    if (this.isPlaying) this.playPodcast();
+    else this.pausePodcast();
+  });
+  this.volume.removeEventListener("change", this.updateVolume);
 };
 
 Player.prototype.updatePodcastInfo = function () {
