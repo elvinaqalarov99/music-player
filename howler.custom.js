@@ -259,7 +259,7 @@ Player.prototype.clear = function () {
   this.currentTime.innerHTML = "00:00";
 };
 
-Player.prototype.checkAnotherPlayer = function (type) {
+Player.prototype.checkAnotherPlayer = function (action) {
   if (!this.isMain)
     throw new Error(
       "This is not a main player, it cannot check for another players"
@@ -269,7 +269,7 @@ Player.prototype.checkAnotherPlayer = function (type) {
     if (player.id !== this.id) {
       const instance = player.instance;
       if (player.hash === this.hash) {
-        switch (type) {
+        switch (action) {
           case 0: // play action
             setTimeout(() => instance.seek(this.instance.seek()), 50); // wait 50  milliseconds to get main player seek position
             instance.playPodcast();
