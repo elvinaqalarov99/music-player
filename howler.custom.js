@@ -248,7 +248,7 @@ Player.prototype.checkAnotherPlayer = function (type) {
       if (player.hash === this.hash) {
         switch (type) {
           case 0:
-            setTimeout(() => instance.seek(this.instance.seek()), 10); // wait 10  milliseconds to get main player seek position
+            setTimeout(() => instance.seek(this.instance.seek()), 50); // wait 10  milliseconds to get main player seek position
             instance.playPodcast();
             instance.mute();
             break;
@@ -256,7 +256,7 @@ Player.prototype.checkAnotherPlayer = function (type) {
             instance.pausePodcast();
             break;
           case 2:
-            setTimeout(() => instance.seek(this.instance.seek()), 10); // wait 10  milliseconds to get main player seek position
+            setTimeout(() => instance.seek(this.instance.seek()), 50); // wait 10  milliseconds to get main player seek position
             instance.mute();
             break;
         }
