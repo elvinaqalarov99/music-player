@@ -14,6 +14,7 @@ class Player {
     this.setProgress = this.setProgress.bind(this);
     this.prev = this.prev.bind(this);
     this.next = this.next.bind(this);
+    this.state = true;
 
     // Player Buttons
     this.playBtn = document.querySelector(`#${this.id} #play`);
@@ -118,11 +119,26 @@ Player.prototype.updatePodcastInfo = function () {
     onplay: () => {
       requestAnimationFrame(this.updateProgress.bind(this));
 
-      if (this.isMain) this.checkAnotherPlayer(0);
+      // Last progress, check this out
+      window["activePlayers"].forEach((player) => {
+        const instance = player.instance;
+
+        if (this.isMain) {
+          if (!instance.isMain) instance.state = false;
+          else instance.state = true;
+        } else {
+          if (instance.isMain) instance.state = false;
+          else instance.state = true;
+        }
+      });
+
+      if (this.isMain && this.state) this.checkAnotherPlayer(0);
+      else if (!this.isMain && this.state) this.checkMainPlayer(0);
     },
 
     onpause: () => {
-      if (this.isMain) this.checkAnotherPlayer(1);
+      if (this.isMain && this.state) this.checkAnotherPlayer(1);
+      else if (!this.isMain && this.state) this.checkMainPlayer(1);
     },
 
     onseek: () => {
@@ -132,7 +148,8 @@ Player.prototype.updatePodcastInfo = function () {
 
       requestAnimationFrame(this.updateProgress.bind(this));
 
-      if (this.isMain) this.checkAnotherPlayer(2);
+      if (this.isMain && this.state) this.checkAnotherPlayer(2);
+      else if (!this.isMain && this.state) this.checkMainPlayer(2);
     },
 
     onend: () => {
@@ -259,12 +276,33 @@ Player.prototype.clear = function () {
   this.currentTime.innerHTML = "00:00";
 };
 
-Player.prototype.checkAnotherPlayer = function (action) {
-  if (!this.isMain)
-    throw new Error(
-      "This is not a main player, it cannot check for another players"
-    );
+Player.prototype.checkMainPlayer = function (action) {
+  const player = mainPlayer;
 
+  if (player.hash === this.hash) {
+    this.mute();
+    switch (action) {
+      case 0: // play action
+        setTimeout(() => player.seek(this.instance.seek()), 50); // wait 50  milliseconds to get main player seek position
+        if (!player.isPlaying) player.playPodcast();
+        break;
+
+      case 1: // pause action
+        player.pausePodcast();
+        break;
+
+      case 2: // seek action
+        setTimeout(() => player.seek(this.instance.seek()), 50); // wait 50  milliseconds to get main player seek position
+        if (!player.isPlaying) this.mute();
+        break;
+    }
+  } else {
+    player.pausePodcast();
+  }
+};
+
+Player.prototype.checkAnotherPlayer = function (action) {
+  console.log("checkAnotherPlayer");
   window["activePlayers"].forEach((player) => {
     if (player.id !== this.id) {
       const instance = player.instance;
